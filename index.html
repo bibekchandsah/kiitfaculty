@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Information</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        .faculty-card {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .faculty-card img {
+            max-width: 150px;
+            border-radius: 5px;
+            margin-right: 15px;
+        }
+        .faculty-card .details {
+            display: inline-block;
+            vertical-align: top;
+            max-width: 400px;
+        }
+        .faculty-card h2 {
+            color: #333;
+        }
+        .faculty-card p {
+            color: #555;
+        }
+        .faculty-card a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .semester-section, .subject-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .semester-section li, .subject-list li {
+            padding: 5px 0;
+        }
+        input[type="text"] {
+            padding: 10px;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 400px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Faculty Information</h1>
+
+    <!-- Search Bar -->
+    <input type="text" id="search-bar" placeholder="Search by name, semester, or subject" onkeyup="searchFaculty()">
+
+    <!-- Faculty Details will be displayed here -->
+    <div id="faculty-details"></div>
+
+    <script>
+        console.log("JavaScript loaded"); // Ensure the script is loaded
+
+        // Fetch the JSON file
+        fetch('facultyDetail.json')  // Replace with the correct path to your JSON file
+            .then(response => response.json())
+            .then(data => {
+                console.log("Faculty Data Loaded: ", data); // Make sure the data is loaded
+                window.facultyData = data;
+                displayFaculty(data);
+            })
+            .catch(error => console.error('Error loading JSON:', error));
+
+        // Function to display faculty data
+        function displayFaculty(data) {
+            let output = '';
+            data.forEach(faculty => {
+                output += `
+                    <div class="faculty-card">
+                        <div>
+                            <img src="${faculty.profileUrl || 'https://via.placeholder.com/150'}" alt="${faculty.name}'s Profile Picture">
+                            <div class="details">
+                                <h2>${faculty.name}</h2>
+                                <p><strong>Email:</strong> ${faculty.email}</p>
+                                <p><strong>Phone:</strong> ${faculty.phone}</p>
+                                <p><strong>Description:</strong> ${faculty.description || 'No description available'}</p>
+                                <p><strong>Job Title:</strong> ${faculty.jobTitle || 'Not specified'}</p>
+                                <p><strong>More Info:</strong> <a href="${faculty.moreInfo}" target="_blank">Click here</a></p>
+                                <p><strong>Is Elective:</strong> ${faculty.isElective ? 'Yes' : 'No'}</p>
+                                <p><strong>Created At:</strong> ${new Date(faculty.createdAt).toLocaleDateString()}</p>
+                                <p><strong>Updated At:</strong> ${new Date(faculty.updatedAt).toLocaleDateString()}</p>
+
+                                <h3>Semester Sections</h3>
+                                <ul class="semester-section">
+                                    ${faculty.semesterSection.map(section => `<li>Section ${section.section}</li>`).join('')}
+                                </ul>
+
+                                <h3>Subjects</h3>
+                                <ul class="subject-list">
+                                    ${faculty.subject.map(sub => `<li>${sub.name}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Display the extracted data
+            document.getElementById('faculty-details').innerHTML = output;
+        }
+
+        // // Function to search faculty by name
+        // function searchFaculty() {
+        //     const query = document.getElementById('search-bar').value.toLowerCase();
+        //     console.log("searchFaculty called with query:", query);  // This will log every time you type something
+
+        //     // Filter faculty data based on the search query
+        //     const filteredFaculty = window.facultyData.filter(faculty => {
+        //         return faculty.name.toLowerCase().includes(query);  // Case insensitive comparison
+        //     });
+
+        //     // Display filtered results
+        //     displayFaculty(filteredFaculty);
+        // }
+
+        // Function to search the faculty data
+        function searchFaculty() {
+            const query = document.getElementById('search-bar').value.toLowerCase();
+            const filteredFaculty = facultyData.filter(faculty => {
+                // Search by name, semester section, or subject
+                const nameMatch = faculty.name.toLowerCase().includes(query);
+                const semesterMatch = faculty.semesterSection.some(section => section.section.toString().includes(query));
+                const subjectMatch = faculty.subject.some(subject => subject.name.toLowerCase().includes(query));
+
+                return nameMatch || semesterMatch || subjectMatch;
+            });
+
+            // Display the filtered faculty
+            displayFaculty(filteredFaculty);
+        }
+    </script>
+</body>
+</html>

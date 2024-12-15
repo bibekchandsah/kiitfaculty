@@ -1,151 +1,247 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faculty Information</title>
+    <link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="KIIT Faculty" />
+    <link rel="manifest" href="favicon/site.webmanifest" />
+
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
         }
+
         h1 {
             color: #4CAF50;
+            text-align: center;
+            margin: 0;
+            padding: 10px 10px 5px 10px;
+            background-color: #fff;
+            box-shadow: -7px -7px 4px 0px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            /* Makes the header stick to the top */
+            top: 0;
+            /* Distance from the top of the viewport */
+            z-index: 1000;
+            /* Ensures the header stays above other elements */
+            border-radius: 5px 5px 0  0 ;
         }
+
+        .search-bar {
+            padding: 0 0 3px 0px;
+            /* width: 100%; */
+            font-size: 16px;
+            border-radius: 0  0 5px 5px;
+            /* display: block; */
+            margin: 0;
+            /* Centers the search bar and adds bottom margin */
+            position: sticky;
+            /* Makes the input stick to the top */
+            top: 52px;
+            /* Below the header */
+            z-index: 999;
+            /* Ensures the search bar stays below the header but above the content */
+            background-color: #fff;
+            box-shadow: 7px 7px 8px 0px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        #faculty-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            grid-auto-rows: masonry;
+        }
+
         .faculty-card {
             border: 1px solid #ccc;
             padding: 15px;
-            margin-bottom: 20px;
             border-radius: 5px;
             background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+
         .faculty-card img {
             max-width: 150px;
             border-radius: 5px;
-            margin-right: 15px;
+            margin-bottom: 10px;
         }
+
         .faculty-card .details {
-            display: inline-block;
-            vertical-align: top;
-            max-width: 400px;
+            /* text-align: center; */
         }
+
         .faculty-card h2 {
             color: #333;
+            margin: 10px 0;
         }
-        .faculty-card p {
+
+        .faculty-card p,
+        .faculty-card a {
             color: #555;
         }
+
         .faculty-card a {
             color: #007BFF;
             text-decoration: none;
         }
-        .semester-section, .subject-list {
-            list-style-type: none;
-            padding-left: 0;
+
+        ul {
+            list-style: none;
+            padding: 0;
         }
-        .semester-section li, .subject-list li {
+
+        ul li {
             padding: 5px 0;
         }
+
         input[type="text"] {
             padding: 10px;
-            margin: 20px 0;
+            margin: 20px auto;
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             font-size: 16px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 50px;
+            display: block;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            font-size: 18px;
+            color: #4CAF50;
         }
     </style>
+
+
+
 </head>
+
 <body>
     <h1>Faculty Information</h1>
 
     <!-- Search Bar -->
-    <input type="text" id="search-bar" placeholder="Search by name, semester, or subject" onkeyup="searchFaculty()">
+    <div class="search-bar">
+        <input type="text" id="search-bar" autocomplete="off" placeholder="Search by name, semester, or subject"
+            aria-label="Search Faculty">
+    </div>
 
-    <!-- Faculty Details will be displayed here -->
+    <!-- Loader -->
+    <div class="loader" id="loader">Loading data...</div>
+
+    <!-- Faculty Details -->
     <div id="faculty-details"></div>
 
     <script>
-        console.log("JavaScript loaded"); // Ensure the script is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('loader');
+            const facultyDetailsContainer = document.getElementById('faculty-details');
+            const searchBar = document.getElementById('search-bar');
 
-        // Fetch the JSON file
-        fetch('facultyDetail.json')  // Replace with the correct path to your JSON file
-            .then(response => response.json())
-            .then(data => {
-                console.log("Faculty Data Loaded: ", data); // Make sure the data is loaded
-                window.facultyData = data;
-                displayFaculty(data);
-            })
-            .catch(error => console.error('Error loading JSON:', error));
+            let facultyData = [];
 
-        // Function to display faculty data
-        function displayFaculty(data) {
-            let output = '';
-            data.forEach(faculty => {
-                output += `
+            // Fetch JSON Data
+            fetch('facultyDetail.json')
+                .then(response => response.json())
+                .then(data => {
+                    facultyData = data;
+                    displayFaculty(facultyData);
+                })
+                .catch(error => {
+                    console.error('Error loading JSON:', error);
+                    facultyDetailsContainer.innerHTML = '<p>Error loading faculty data. Please try again later.</p>';
+                })
+                .finally(() => {
+                    loader.style.display = 'none';
+                });
+
+            // Helper function to create a list
+            function renderList(items, fallbackMessage, className) {
+                if (!items || items.length === 0) {
+                    return `<p>${fallbackMessage}</p>`;
+                }
+                return `<ul class="${className}">${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
+            }
+
+            // Function to display faculty data
+            function displayFaculty(data) {
+                // Sort data alphabetically by name
+                const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
+
+                const output = data.map(faculty => `
                     <div class="faculty-card">
-                        <div>
+                        <div class="details">
+                            <h2>${faculty.name}</h2>
+                            <p><strong>Email:</strong><a href="mailto:${faculty.email || 'N/A'}">${faculty.email || 'N/A'}</a></p>
+                            <p><strong>Phone:</strong> ${faculty.phone || 'N/A'}</p>
+                            <p><strong>Description:</strong> ${faculty.description || 'No description available'}</p>
+                            <p><strong>Job Title:</strong> ${faculty.jobTitle || 'Not specified'}</p>
+                            <p><strong>More Info:</strong> <a href="${faculty.moreInfo || '#'}" target="_blank">Click here</a></p>
+                            <p><strong>Is Elective:</strong> ${faculty.isElective ? 'Yes' : 'No'}</p>
+                            <!-- 
                             <img src="${faculty.profileUrl || 'https://via.placeholder.com/150'}" alt="${faculty.name}'s Profile Picture">
-                            <div class="details">
-                                <h2>${faculty.name}</h2>
-                                <p><strong>Email:</strong> ${faculty.email}</p>
-                                <p><strong>Phone:</strong> ${faculty.phone}</p>
-                                <p><strong>Description:</strong> ${faculty.description || 'No description available'}</p>
-                                <p><strong>Job Title:</strong> ${faculty.jobTitle || 'Not specified'}</p>
-                                <p><strong>More Info:</strong> <a href="${faculty.moreInfo}" target="_blank">Click here</a></p>
-                                <p><strong>Is Elective:</strong> ${faculty.isElective ? 'Yes' : 'No'}</p>
-                                <p><strong>Created At:</strong> ${new Date(faculty.createdAt).toLocaleDateString()}</p>
-                                <p><strong>Updated At:</strong> ${new Date(faculty.updatedAt).toLocaleDateString()}</p>
-
-                                <h3>Semester Sections</h3>
-                                <ul class="semester-section">
-                                    ${faculty.semesterSection.map(section => `<li>Section ${section.section}</li>`).join('')}
-                                </ul>
-
-                                <h3>Subjects</h3>
-                                <ul class="subject-list">
-                                    ${faculty.subject.map(sub => `<li>${sub.name}</li>`).join('')}
-                                </ul>
-                            </div>
+                            <p><strong>Created At:</strong> ${new Date(faculty.createdAt).toLocaleDateString()}</p>
+                            <p><strong>Updated At:</strong> ${new Date(faculty.updatedAt).toLocaleDateString()}</p>
+                            -->
+                            <h3>Semester Sections</h3>
+                            ${renderList(
+                    faculty.semesterSection?.map(section => `Section ${section.section}`),
+                    'No semesters available',
+                    'semester-section'
+                )}
+                            <h3>Subjects</h3>
+                            ${renderList(
+                    faculty.subject?.map(sub => sub.name),
+                    'No subjects available',
+                    'subject-list'
+                )}
                         </div>
                     </div>
-                `;
+                `).join('');
+                facultyDetailsContainer.innerHTML = output || '<p>No faculty data found.</p>';
+            }
+
+
+
+
+
+
+
+            searchBar.focus();
+
+
+            // Debounced Search Function
+            let debounceTimer;
+            searchBar.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const query = searchBar.value.toLowerCase();
+                    const filteredFaculty = facultyData.filter(faculty => {
+                        const nameMatch = faculty.name.toLowerCase().includes(query);
+                        // const semesterMatch = faculty.semesterSection?.some(section => section.section.toString().includes(query));
+
+
+                        const semesterMatch = faculty.semesterSection.some(section => section.section.toString().includes(query));
+
+                        const subjectMatch = faculty.subject?.some(subject => subject.name.toLowerCase().includes(query));
+                        return nameMatch || semesterMatch || subjectMatch;
+                    });
+                    displayFaculty(filteredFaculty);
+                }, 300);
             });
-
-            // Display the extracted data
-            document.getElementById('faculty-details').innerHTML = output;
-        }
-
-        // // Function to search faculty by name
-        // function searchFaculty() {
-        //     const query = document.getElementById('search-bar').value.toLowerCase();
-        //     console.log("searchFaculty called with query:", query);  // This will log every time you type something
-
-        //     // Filter faculty data based on the search query
-        //     const filteredFaculty = window.facultyData.filter(faculty => {
-        //         return faculty.name.toLowerCase().includes(query);  // Case insensitive comparison
-        //     });
-
-        //     // Display filtered results
-        //     displayFaculty(filteredFaculty);
-        // }
-
-        // Function to search the faculty data
-        function searchFaculty() {
-            const query = document.getElementById('search-bar').value.toLowerCase();
-            const filteredFaculty = facultyData.filter(faculty => {
-                // Search by name, semester section, or subject
-                const nameMatch = faculty.name.toLowerCase().includes(query);
-                const semesterMatch = faculty.semesterSection.some(section => section.section.toString().includes(query));
-                const subjectMatch = faculty.subject.some(subject => subject.name.toLowerCase().includes(query));
-
-                return nameMatch || semesterMatch || subjectMatch;
-            });
-
-            // Display the filtered faculty
-            displayFaculty(filteredFaculty);
-        }
+        });
     </script>
 </body>
+
 </html>
